@@ -178,27 +178,20 @@ func sync(ips []string, dnsNames []string, cloudflareTTL int, cloudflareProxy bo
 		return errors.Wrap(err, "failed to access cloudflare api")
 	}
 
-	root := dnsNames[0]
-	for strings.Count(root, ".") > 1 {
-		root = root[strings.Index(root, ".")+1:]
-	}
-
-	zoneID, err := api.ZoneIDByName(root)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find zone id for zone-name:=%s",
-			root)
-	}
-
-	known := map[string]bool{}
-	for _, ip := range ips {
-		known[ip] = true
-	}
-
 	for _, dnsName := range dnsNames {
+		zoneID, err := api.ZoneIDByName(dnsName)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find zone id for zone-name:=%s", dnsName)
+		}
+
+		known := map[string]bool{}
+		for _, ip := range ips {
+			known[ip] = true
+		}
+
 		records, err := api.DNSRecords(zoneID, cloudflare.DNSRecord{Type: "A", Name: dnsName})
 		if err != nil {
-			return errors.Wrapf(err, "failed to list dns records for zone-id=%s name=%s",
-				zoneID, dnsName)
+			return errors.Wrapf(err, "failed to list dns records for zone-id=%s name=%s", zoneID, dnsName)
 		}
 
 		seen := map[string]bool{}
